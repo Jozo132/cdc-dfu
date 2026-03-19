@@ -1,0 +1,32 @@
+{
+    "name": "cdc-dfu",
+    "version": "1.0.0",
+    "description": "Zero-overhead DFU bootloader jump for STM32F4 via USB CDC DTR toggling. Auto-configures DFU upload trigger for PlatformIO.",
+    "keywords": "stm32, dfu, bootloader, usb, cdc, upload",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Jozo132/cdc-dfu.git"
+    },
+    "authors": [
+        {
+            "name": "Jozo132"
+        }
+    ],
+    "license": "MIT",
+    "frameworks": "arduino",
+    "platforms": "ststm32",
+    "build": {
+        "flags": "-D DTR_TOGGLING_SEQ",
+        "extraScript": "extra_script.py",
+        "libArchive": false
+    },
+    "export": {
+        "include": [
+            "src/*",
+            "extra_script.py",
+            "library.json",
+            "README.md",
+            "LICENSE"
+        ]
+    }
+}
