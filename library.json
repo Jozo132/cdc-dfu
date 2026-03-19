@@ -18,7 +18,8 @@
     "build": {
         "flags": "-D DTR_TOGGLING_SEQ",
         "extraScript": "extra_script.py",
-        "libArchive": false
+        "libArchive": false,
+        "srcFilter": "-<*>"
     },
     "export": {
         "include": [
