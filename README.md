@@ -19,7 +19,7 @@ platform = ststm32
 board = genericSTM32F401RC
 framework = arduino
 upload_protocol = dfu
-lib_deps = https://github.com/Jozo132/cdc-dfu.git
+lib_deps = cdc-dfu
 build_flags =
     -D PIO_FRAMEWORK_ARDUINO_ENABLE_CDC
     -D USBCON
