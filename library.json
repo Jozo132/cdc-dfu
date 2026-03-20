@@ -24,6 +24,7 @@
     "export": {
         "include": [
             "src/*",
+            "examples/*",
             "extra_script.py",
             "library.json",
             "README.md",

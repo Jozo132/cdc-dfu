@@ -1,0 +1,12 @@
+{
+    "name": "cdc-dfu",
+    "version": "1.0.1",
+    "private": true,
+    "description": "Zero-overhead DFU bootloader jump for STM32F4 via USB CDC",
+    "scripts": {
+        "example:blinky-f401cc": "pio run -d examples/blinky-f401cc",
+        "example:blinky-f401cc:upload": "pio run -d examples/blinky-f401cc --target upload",
+        "example:blinky-f401cc:monitor": "pio device monitor -d examples/blinky-f401cc",
+        "test:blinky-f401cc": "pio run -d test/blinky-f401cc --target upload"
+    }
+}
