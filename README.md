@@ -1,6 +1,6 @@
 # cdc-dfu
 
-Zero-overhead DFU bootloader jump for STM32F4 via USB CDC. Add the library dependency and uploads "just work" over USB — no `#include`, no BOOT0 pins, no ST-Link, no extra scripts.
+Zero-overhead DFU bootloader jump for STM32 (F4, H7) via USB CDC. Add the library dependency and uploads "just work" over USB — no `#include`, no BOOT0 pins, no ST-Link, no extra scripts.
 
 ## How it works
 
@@ -11,16 +11,34 @@ Zero-overhead DFU bootloader jump for STM32F4 via USB CDC. Add the library depen
 
 ## Quick start
 
-### platformio.ini
+### platformio.ini (STM32F4)
 
 ```ini
-[env:myboard]
+[env:blackpill_f401cc]
 platform = ststm32
-board = genericSTM32F401RC
+board = genericSTM32F401CC
 framework = arduino
 upload_protocol = dfu
 lib_deps = cdc-dfu
 build_flags =
+    -D LED_BUILTIN=PC13
+    -D PIO_FRAMEWORK_ARDUINO_ENABLE_CDC
+    -D USBCON
+    -D USBD_USE_CDC
+    -D HAL_PCD_MODULE_ENABLED
+```
+
+### platformio.ini (STM32H7)
+
+```ini
+[env:devebox_h743vitx]
+platform = ststm32
+board = devebox_h743vitx
+framework = arduino
+upload_protocol = dfu
+lib_deps = cdc-dfu
+build_flags =
+    -D LED_BUILTIN=PE3
     -D PIO_FRAMEWORK_ARDUINO_ENABLE_CDC
     -D USBCON
     -D USBD_USE_CDC
@@ -49,7 +67,8 @@ The very first time you need to flash via hardware DFU (hold BOOT0, press RST) o
 
 ## Requirements
 
-- STM32F4 with USB OTG FS (e.g., F401, F411, F405, F407, F446)
+- **STM32F4** with USB OTG FS (e.g., F401, F411, F405, F407, F446)
+- **STM32H7** with USB OTG FS/HS (e.g., H743, H750, H723)
 - Arduino framework (framework-arduinoststm32)
 - USB CDC enabled (`USBCON`, `USBD_USE_CDC`, `PIO_FRAMEWORK_ARDUINO_ENABLE_CDC`)
 

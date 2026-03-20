@@ -1,20 +1,28 @@
 /*
- * cdc-dfu: Zero-overhead DFU bootloader jump for STM32F4 via USB CDC.
+ * cdc-dfu: Zero-overhead DFU bootloader jump for STM32 via USB CDC.
  *
  * Compiled automatically by PlatformIO when listed in lib_deps.
  * No #include needed in user code.
  *
+ * Supports: STM32F4, STM32H7
  * Silently compiles to nothing if guards are not met (wrong MCU, no USB CDC, etc.)
  */
 
-#if defined(STM32F4xx) && defined(USBCON) && defined(USBD_USE_CDC) && defined(DTR_TOGGLING_SEQ)
+#if (defined(STM32F4xx) || defined(STM32H7xx)) && defined(USBCON) && defined(USBD_USE_CDC) && defined(DTR_TOGGLING_SEQ)
 
 #include <Arduino.h>
-#include "stm32f4xx_hal.h"
+
+#if defined(STM32F4xx)
+  #include "stm32f4xx_hal.h"
+  #define STM32_ROM_BOOTLOADER 0x1FFF0000UL
+#elif defined(STM32H7xx)
+  #include "stm32h7xx_hal.h"
+  #define STM32_ROM_BOOTLOADER 0x1FF09800UL
+#endif
+
 #include "usbd_cdc_if.h"
 #include "usbd_cdc.h"
 
-#define STM32_ROM_BOOTLOADER 0x1FFF0000UL
 #define DFU_REQUEST_MAGIC    0x424F4F54UL  // "BOOT"
 
 // Persists across NVIC_SystemReset - not zeroed by C runtime
@@ -49,11 +57,12 @@ static void _checkDfuRequest()
     SysTick->VAL  = 0;
 
     // Disable all NVIC interrupts and clear pending
-    for (uint8_t i = 0; i < 8; i++) {
+    for (uint8_t i = 0; i < sizeof(NVIC->ICER)/sizeof(NVIC->ICER[0]); i++) {
         NVIC->ICER[i] = 0xFFFFFFFF;
         NVIC->ICPR[i] = 0xFFFFFFFF;
     }
 
+#if defined(STM32F4xx)
     // Reset USB OTG FS peripheral so bootloader can reinitialize it cleanly
     RCC->AHB2ENR  |= RCC_AHB2ENR_OTGFSEN;
     RCC->AHB2RSTR |= RCC_AHB2RSTR_OTGFSRST;
@@ -77,6 +86,40 @@ static void _checkDfuRequest()
     __DSB();
     SYSCFG->MEMRMP = 0x01;
     __DSB();
+
+#elif defined(STM32H7xx)
+    // Reset USB OTG peripheral
+    #if defined(USB_OTG_FS)
+    RCC->AHB1ENR  |= RCC_AHB1ENR_USB2OTGHSEN;
+    RCC->AHB1RSTR |= RCC_AHB1RSTR_USB2OTGFSRST;
+    __DSB();
+    RCC->AHB1RSTR &= ~RCC_AHB1RSTR_USB2OTGFSRST;
+    #elif defined(USB_OTG_HS)
+    RCC->AHB1ENR  |= RCC_AHB1ENR_USB1OTGHSEN;
+    RCC->AHB1RSTR |= RCC_AHB1RSTR_USB1OTGHSRST;
+    __DSB();
+    RCC->AHB1RSTR &= ~RCC_AHB1RSTR_USB1OTGHSRST;
+    #endif
+
+    // Reset GPIO port A (PA11/PA12 = USB D-/D+)
+    RCC->AHB4RSTR |= RCC_AHB4RSTR_GPIOARST;
+    __DSB();
+    RCC->AHB4RSTR &= ~RCC_AHB4RSTR_GPIOARST;
+
+    // Reset clocks back to HSI (64 MHz on H7)
+    RCC->CR |= RCC_CR_HSION;
+    while (!(RCC->CR & RCC_CR_HSIRDY)) {}
+    RCC->CFGR = 0;
+    while ((RCC->CFGR & RCC_CFGR_SWS) != 0) {}
+    RCC->CR &= ~(RCC_CR_PLL1ON | RCC_CR_PLL2ON | RCC_CR_PLL3ON | RCC_CR_HSEON | RCC_CR_CSION);
+
+    // Remap system memory to 0x00000000
+    RCC->APB4ENR |= RCC_APB4ENR_SYSCFGEN;
+    __DSB();
+    SYSCFG->UR2 = SYSCFG->UR2; // Ensure system memory accessible
+    __DSB();
+
+#endif
 
     uint32_t bootAddr  = STM32_ROM_BOOTLOADER;
     uint32_t bootStack = *(volatile uint32_t*) bootAddr;
@@ -110,7 +153,15 @@ extern "C" void dtr_togglingHook(uint8_t *buf, uint32_t *len)
         // Disconnect USB so host sees device leave
         USBD_Stop(&hUSBD_Device_CDC);
         USBD_DeInit(&hUSBD_Device_CDC);
+#if defined(STM32F4xx)
         USB_OTG_FS->GCCFG &= ~USB_OTG_GCCFG_PWRDWN;
+#elif defined(STM32H7xx)
+        #if defined(USB_OTG_FS)
+        USB_OTG_FS->GCCFG &= ~USB_OTG_GCCFG_PWRDWN;
+        #elif defined(USB_OTG_HS)
+        USB_OTG_HS->GCCFG &= ~USB_OTG_GCCFG_PWRDWN;
+        #endif
+#endif
 
         // Set DFU request flag (survives soft reset)
         _dfu_request_flag = DFU_REQUEST_MAGIC;
@@ -119,4 +170,4 @@ extern "C" void dtr_togglingHook(uint8_t *buf, uint32_t *len)
     }
 }
 
-#endif // STM32F4xx && USBCON && USBD_USE_CDC && DTR_TOGGLING_SEQ
+#endif // (STM32F4xx || STM32H7xx) && USBCON && USBD_USE_CDC && DTR_TOGGLING_SEQ

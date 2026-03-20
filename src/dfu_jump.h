@@ -2,7 +2,7 @@
 #define DFU_JUMP_H
 
 /*
- * cdc-dfu: Zero-overhead DFU bootloader jump for STM32F4 via USB CDC.
+ * cdc-dfu: Zero-overhead DFU bootloader jump for STM32 (F4, H7) via USB CDC.
  *
  * This header exists for backward compatibility. The library compiles
  * automatically when listed in lib_deps — no #include needed.

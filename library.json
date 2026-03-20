@@ -1,8 +1,8 @@
 {
     "name": "cdc-dfu",
-    "version": "1.0.1",
-    "description": "Zero-overhead DFU bootloader jump for STM32F4 via USB CDC DTR toggling. Auto-configures DFU upload trigger for PlatformIO.",
-    "keywords": "stm32, dfu, bootloader, usb, cdc, upload",
+    "version": "1.1.0",
+    "description": "Zero-overhead DFU bootloader jump for STM32 (F4, H7) via USB CDC DTR toggling. Auto-configures DFU upload trigger for PlatformIO.",
+    "keywords": "stm32, stm32f4, stm32h7, dfu, bootloader, usb, cdc, upload",
     "repository": {
         "type": "git",
         "url": "https://github.com/Jozo132/cdc-dfu.git"
