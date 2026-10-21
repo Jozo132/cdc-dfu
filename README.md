@@ -9,6 +9,10 @@ Zero-overhead DFU bootloader jump for STM32 (F4, H7) via USB CDC. Add the librar
 3. **ISR → Reset → Bootloader**: The hook disconnects USB, writes a magic value to `.noinit` RAM, and triggers `NVIC_SystemReset()`. A C++ constructor (Thread mode) catches the flag and jumps to the ROM DFU bootloader
 4. **Flash**: `dfu-util` uploads the new firmware
 
+The upload helper preserves `dfu-util` exit code 74 only when its output reports a
+completed download and the application CDC device enumerates again. Other upload
+failures remain failures.
+
 ## Quick start
 
 ### platformio.ini (STM32F4)

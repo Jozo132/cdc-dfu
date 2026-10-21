@@ -42,6 +42,7 @@ if os.path.isfile(_src_file):
 _upload_protocol = _project_env.subst("$UPLOAD_PROTOCOL")
 
 if _upload_protocol == "dfu":
+    import shlex
 
     def _trigger_dfu_before_upload(source, target, env):
         """Toggle DTR + send magic bytes to enter DFU bootloader."""
@@ -91,3 +92,30 @@ if _upload_protocol == "dfu":
         print("WARNING: device did not enter DFU mode within timeout.")
 
     _project_env.AddPreAction("upload", _trigger_dfu_before_upload)
+
+    def _normalize_leave_status(source, target, env):
+        command = env.get("UPLOADCMD")
+        python_exe = shlex.quote(env.subst("$PYTHONEXE"))
+        cdc_probe = (
+            python_exe
+            + " -c \"import time, serial.tools.list_ports as p; raise SystemExit(0 if any("
+            + "any(port.vid == 0x0483 and port.pid == 0x5740 for port in p.comports())"
+            + " or time.sleep(0.1) for _ in range(50)) else 1)\""
+        )
+        upload_log = "$$(mktemp)"
+        env.Replace(
+            UPLOADCMD=(
+                "upload_log="
+                + upload_log
+                + "; "
+                + command
+                + " >\"$$upload_log\" 2>&1; status=$$?; "
+                + "cat \"$$upload_log\"; if [ \"$$status\" -eq 74 ] && "
+                + "grep -Eq 'Download done\\.|File downloaded successfully' \"$$upload_log\" && "
+                + cdc_probe
+                + "; then rm -f \"$$upload_log\"; exit 0; fi; "
+                + "rm -f \"$$upload_log\"; exit \"$$status\""
+            )
+        )
+
+    _project_env.AddPreAction("upload", _normalize_leave_status)

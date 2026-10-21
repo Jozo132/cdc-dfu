@@ -26,7 +26,7 @@
 #define DFU_REQUEST_MAGIC    0x424F4F54UL  // "BOOT"
 
 // Persists across NVIC_SystemReset - not zeroed by C runtime
-__attribute__((section(".noinit"))) static volatile uint32_t _dfu_request_flag;
+__attribute__((section(".noinit"), aligned(32))) static volatile uint32_t _dfu_request_flag;
 
 // USB device handle (defined in usbd_cdc_if.c)
 extern USBD_HandleTypeDef hUSBD_Device_CDC;
@@ -44,12 +44,26 @@ static const uint8_t dfu_magic[DFU_MAGIC_LEN] = { 'D', 'F', 'U', '!' };
 __attribute__((constructor(101)))
 static void _checkDfuRequest()
 {
-    if (_dfu_request_flag != DFU_REQUEST_MAGIC)
+#if defined(STM32H7xx)
+    HAL_PWR_EnableBkUpAccess();
+    const bool dfuRequested = RTC->BKP0R == DFU_REQUEST_MAGIC;
+    RTC->BKP0R = 0;
+#else
+    const bool dfuRequested = _dfu_request_flag == DFU_REQUEST_MAGIC;
+    _dfu_request_flag = 0;
+#endif
+    if (!dfuRequested)
         return;
 
-    _dfu_request_flag = 0;  // Clear so we don't loop
-
     __disable_irq();
+
+#if defined(STM32H7xx)
+    SCB_DisableDCache();
+    SCB_DisableICache();
+    MPU->CTRL = 0;
+    __DSB();
+    __ISB();
+#endif
 
     // Disable SysTick
     SysTick->CTRL = 0;
@@ -164,7 +178,13 @@ extern "C" void dtr_togglingHook(uint8_t *buf, uint32_t *len)
 #endif
 
         // Set DFU request flag (survives soft reset)
+#if defined(STM32H7xx)
+        HAL_PWR_EnableBkUpAccess();
+        RTC->BKP0R = DFU_REQUEST_MAGIC;
+        __DSB();
+#else
         _dfu_request_flag = DFU_REQUEST_MAGIC;
+#endif
 
         NVIC_SystemReset();
     }
