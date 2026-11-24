@@ -1,3 +1,5 @@
 **/.pio
 node_modules
 *.log
+test/blinky-f401cc/$upload_log
+__pycache__/**/*.pyc

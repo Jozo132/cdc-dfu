@@ -83,6 +83,7 @@ The very first time you need to flash via hardware DFU (hold BOOT0, press RST) o
 | `src/cdc_dfu.cpp` | Firmware implementation: constructor + ISR hook |
 | `src/cdc_dfu.h` | Backward-compatibility stub (inclusion not required) |
 | `extra_script.py` | Force-compiles firmware code + auto-configures DFU trigger before upload |
+| `upload_dfu.py` | Runs dfu-util and verifies application CDC re-enumeration before normalizing exit 74 |
 | `library.json` | Library metadata + loads extra script |
 
 ## How the auto-configuration works

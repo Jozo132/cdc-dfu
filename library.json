@@ -26,6 +26,7 @@
             "src/*",
             "examples/*",
             "extra_script.py",
+            "upload_dfu.py",
             "library.json",
             "README.md",
             "LICENSE"
